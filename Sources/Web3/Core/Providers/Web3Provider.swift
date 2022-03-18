@@ -9,10 +9,7 @@
 import Foundation
 
 public protocol Web3Provider {
-
-    typealias Web3ResponseCompletion<Result: Codable> = (_ resp: Web3Response<Result>) -> Void
-
-    func send<Params, Result>(request: RPCRequest<Params>, response: @escaping Web3ResponseCompletion<Result>)
+    func send<Params, Result: Codable>(request: RPCRequest<Params>) async -> Web3Response<Result>
 }
 
 public struct Web3Response<Result: Codable> {
@@ -23,6 +20,7 @@ public struct Web3Response<Result: Codable> {
         case connectionFailed(Swift.Error?)
         case serverError(Swift.Error?)
         case decodingError(Swift.Error?)
+        case customError(String)
     }
     
     public enum Status<Result> {

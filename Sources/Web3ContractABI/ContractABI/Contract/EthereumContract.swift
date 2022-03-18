@@ -127,20 +127,17 @@ extension EthereumContract {
     /// - Parameters:
     ///   - data: EthereumData object representing the method called
     ///   - outputs: Expected return values
-    ///   - completion: Completion handler
-    public func call(_ call: EthereumCall, outputs: [SolidityFunctionParameter], block: EthereumQuantityTag = .latest, completion: @escaping ([String: Any]?, Error?) -> Void) {
-        eth.call(call: call, block: block) { response in
-            switch response.status {
-            case .success(let data):
-                do {
-                    let dictionary = try ABI.decodeParameters(outputs, from: data.hex())
-                    completion(dictionary, nil)
-                } catch {
-                    completion(nil, error)
-                }
-            case .failure(let error):
-                completion(nil, error)
+    public func call(_ call: EthereumCall, outputs: [SolidityFunctionParameter], block: EthereumQuantityTag = .latest) async -> ([String: Any]?, Error?) {
+        switch await eth.call(call: call, block: block).status {
+        case .success(let data):
+            do {
+                let dictionary = try ABI.decodeParameters(outputs, from: data.hex())
+                return (dictionary, nil)
+            } catch {
+                return (nil, error)
             }
+        case .failure(let error):
+            return (nil, error)
         }
     }
     
@@ -153,14 +150,12 @@ extension EthereumContract {
     ///   - gas: Maximum gas allowed for the transaction
     ///   - gasPrice: Amount of wei to spend per unit of gas
     ///   - completion: completion handler. Either the transaction's hash or an error.
-    public func send(_ transaction: EthereumTransaction, completion: @escaping (EthereumData?, Error?) -> Void) {
-        eth.sendTransaction(transaction: transaction) { response in
-            switch response.status {
-            case .success(let hash):
-                completion(hash, nil)
-            case .failure(let error):
-                completion(nil, error)
-            }
+    public func send(_ transaction: EthereumTransaction) async -> (EthereumData?, Error?) {
+        switch await eth.sendTransaction(transaction: transaction).status {
+        case .success(let hash):
+            return (hash, nil)
+        case .failure(let error):
+            return (nil, error)
         }
     }
     
@@ -169,14 +164,12 @@ extension EthereumContract {
     /// - Parameters:
     ///   - call: An ethereum call with the data for the transaction.
     ///   - completion: completion handler with either an error or the estimated amount of gas needed.
-    public func estimateGas(_ call: EthereumCall, completion: @escaping (EthereumQuantity?, Error?) -> Void) {
-        eth.estimateGas(call: call) { response in
-            switch response.status {
-            case .success(let quantity):
-                completion(quantity, nil)
-            case .failure(let error):
-                completion(nil, error)
-            }
+    public func estimateGas(_ call: EthereumCall) async -> (EthereumQuantity?, Error?) {
+        switch await eth.estimateGas(call: call).status {
+        case .success(let quantity):
+            return (quantity, nil)
+        case .failure(let error):
+            return (nil, error)
         }
     }
 }

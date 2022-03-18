@@ -35,13 +35,13 @@ public protocol SolidityInvocation {
     func createTransaction(nonce: EthereumQuantity?, from: EthereumAddress, value: EthereumQuantity?, gas: EthereumQuantity, gasPrice: EthereumQuantity?) -> EthereumTransaction?
     
     /// Read data from the blockchain. Only available for constant functions.
-    func call(block: EthereumQuantityTag, completion: @escaping ([String: Any]?, Error?) -> Void)
+    func call(block: EthereumQuantityTag) async -> ([String: Any]?, Error?)
     
     /// Write data to the blockchain. Only available for non-constant functions.
-    func send(nonce: EthereumQuantity?, from: EthereumAddress, value: EthereumQuantity?, gas: EthereumQuantity, gasPrice: EthereumQuantity?, completion: @escaping (EthereumData?, Error?) -> Void)
+    func send(nonce: EthereumQuantity?, from: EthereumAddress, value: EthereumQuantity?, gas: EthereumQuantity, gasPrice: EthereumQuantity?) async -> (EthereumData?, Error?)
     
     /// Estimate how much gas is needed to execute this transaction.
-    func estimateGas(from: EthereumAddress?, gas: EthereumQuantity?, value: EthereumQuantity?, completion: @escaping (EthereumQuantity?, Error?) -> Void)
+    func estimateGas(from: EthereumAddress?, gas: EthereumQuantity?, value: EthereumQuantity?) async -> (EthereumQuantity?, Error?)
     
     /// Encodes the ABI for this invocation
     func encodeABI() -> EthereumData?
@@ -65,21 +65,19 @@ public struct SolidityReadInvocation: SolidityInvocation {
         self.handler = handler
     }
     
-    public func call(block: EthereumQuantityTag = .latest, completion: @escaping ([String: Any]?, Error?) -> Void) {
+    public func call(block: EthereumQuantityTag = .latest) async -> ([String: Any]?, Error?) {
         guard handler.address != nil else {
-            completion(nil, InvocationError.contractNotDeployed)
-            return
+            return (nil, InvocationError.contractNotDeployed)
         }
         guard let call = createCall() else {
-            completion(nil, InvocationError.encodingError)
-            return
+            return (nil, InvocationError.encodingError)
         }
         let outputs = method.outputs ?? []
-        handler.call(call, outputs: outputs, block: block, completion: completion)
+        return await handler.call(call, outputs: outputs, block: block)
     }
     
-    public func send(nonce: EthereumQuantity? = nil, from: EthereumAddress, value: EthereumQuantity?, gas: EthereumQuantity, gasPrice: EthereumQuantity?, completion: @escaping (EthereumData?, Error?) -> Void) {
-        completion(nil, InvocationError.invalidInvocation)
+    public func send(nonce: EthereumQuantity? = nil, from: EthereumAddress, value: EthereumQuantity?, gas: EthereumQuantity, gasPrice: EthereumQuantity?) async -> (EthereumData?, Error?) {
+        return (nil, InvocationError.invalidInvocation)
     }
     
     public func createCall() -> EthereumCall? {
@@ -120,20 +118,18 @@ public struct SolidityPayableInvocation: SolidityInvocation {
         return nil
     }
     
-    public func call(block: EthereumQuantityTag = .latest, completion: @escaping ([String: Any]?, Error?) -> Void) {
-        completion(nil, InvocationError.invalidInvocation)
+    public func call(block: EthereumQuantityTag = .latest) async -> ([String: Any]?, Error?) {
+        return (nil, InvocationError.invalidInvocation)
     }
     
-    public func send(nonce: EthereumQuantity? = nil, from: EthereumAddress, value: EthereumQuantity?, gas: EthereumQuantity, gasPrice: EthereumQuantity?, completion: @escaping (EthereumData?, Error?) -> Void) {
+    public func send(nonce: EthereumQuantity? = nil, from: EthereumAddress, value: EthereumQuantity?, gas: EthereumQuantity, gasPrice: EthereumQuantity?) async -> (EthereumData?, Error?) {
         guard handler.address != nil else {
-            completion(nil, InvocationError.contractNotDeployed)
-            return
+            return (nil, InvocationError.contractNotDeployed)
         }
         guard let transaction = createTransaction(nonce: nonce, from: from, value: value, gas: gas, gasPrice: gasPrice) else {
-            completion(nil, InvocationError.encodingError)
-            return
+            return (nil, InvocationError.encodingError)
         }
-        handler.send(transaction, completion: completion)
+        return await handler.send(transaction)
     }
 }
 
@@ -162,20 +158,18 @@ public struct SolidityNonPayableInvocation: SolidityInvocation {
         return nil
     }
     
-    public func call(block: EthereumQuantityTag = .latest, completion: @escaping ([String: Any]?, Error?) -> Void) {
-        completion(nil, InvocationError.invalidInvocation)
+    public func call(block: EthereumQuantityTag = .latest) async -> ([String: Any]?, Error?){
+        return (nil, InvocationError.invalidInvocation)
     }
     
-    public func send(nonce: EthereumQuantity? = nil, from: EthereumAddress, value: EthereumQuantity?, gas: EthereumQuantity, gasPrice: EthereumQuantity?, completion: @escaping (EthereumData?, Error?) -> Void) {
+    public func send(nonce: EthereumQuantity? = nil, from: EthereumAddress, value: EthereumQuantity?, gas: EthereumQuantity, gasPrice: EthereumQuantity?) async -> (EthereumData?, Error?) {
         guard handler.address != nil else {
-            completion(nil, InvocationError.contractNotDeployed)
-            return
+            return (nil, InvocationError.contractNotDeployed)
         }
         guard let transaction = createTransaction(nonce: nonce, from: from, value: value, gas: gas, gasPrice: gasPrice) else {
-            completion(nil, InvocationError.encodingError)
-            return
+            return (nil, InvocationError.encodingError)
         }
-        handler.send(transaction, completion: completion)
+        return await handler.send(transaction)
     }
 }
 
@@ -185,21 +179,19 @@ public extension SolidityInvocation {
     
     // Default Implementations
     
-    func call(completion: @escaping ([String: Any]?, Error?) -> Void) {
-        self.call(block: .latest, completion: completion)
+    func call() async -> ([String: Any]?, Error?) {
+        return await self.call(block: .latest)
     }
     
-    func estimateGas(from: EthereumAddress? = nil, gas: EthereumQuantity? = nil, value: EthereumQuantity? = nil, completion: @escaping (EthereumQuantity?, Error?) -> Void) {
+    func estimateGas(from: EthereumAddress? = nil, gas: EthereumQuantity? = nil, value: EthereumQuantity? = nil) async -> (EthereumQuantity?, Error?) {
         guard let data = encodeABI() else {
-            completion(nil, InvocationError.encodingError)
-            return
+            return (nil, InvocationError.encodingError)
         }
         guard let to = handler.address else {
-            completion(nil, InvocationError.contractNotDeployed)
-            return
+            return (nil, InvocationError.contractNotDeployed)
         }
         let call = EthereumCall(from: from, to: to, gas: gas, gasPrice: nil, value: value, data: data)
-        handler.estimateGas(call, completion: completion)
+        return await handler.estimateGas(call)
     }
     
     func encodeABI() -> EthereumData? {
@@ -231,16 +223,14 @@ public struct SolidityConstructorInvocation {
         return EthereumTransaction(nonce: nonce, gasPrice: gasPrice, gas: gas, from: from, to: nil, value: value, data: data)
     }
     
-    public func send(nonce: EthereumQuantity? = nil, from: EthereumAddress, value: EthereumQuantity = 0, gas: EthereumQuantity, gasPrice: EthereumQuantity?, completion: @escaping (EthereumData?, Error?) -> Void) {
+    public func send(nonce: EthereumQuantity? = nil, from: EthereumAddress, value: EthereumQuantity = 0, gas: EthereumQuantity, gasPrice: EthereumQuantity?) async -> (EthereumData?, Error?) {
         guard payable == true || value == 0 else {
-            completion(nil, InvocationError.invalidInvocation)
-            return
+            return (nil, InvocationError.invalidInvocation)
         }
         guard let transaction = createTransaction(nonce: nonce, from: from, value: value, gas: gas, gasPrice: gasPrice) else {
-            completion(nil, InvocationError.encodingError)
-            return
+            return (nil, InvocationError.encodingError)
         }
-        handler.send(transaction, completion: completion)
+        return await handler.send(transaction)
     }
     
     public func encodeABI() -> EthereumData? {

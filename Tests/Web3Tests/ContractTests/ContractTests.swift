@@ -9,7 +9,6 @@ import Quick
 import Nimble
 @testable import Web3
 import BigInt
-import PromiseKit
 import Foundation
 #if canImport(Web3ContractABI)
     @testable import Web3ContractABI
@@ -34,19 +33,19 @@ class MockWeb3Provider: Web3Provider {
         stubs[method] = nil
     }
 
-    func send<Params, Result>(request: RPCRequest<Params>, response: @escaping (Web3Response<Result>) -> Void) {
+    func send<Params, Result>(request: RPCRequest<Params>) async -> Web3Response<Result> {
         if let stubbedData = stubs[request.method] {
             do {
                 let rpcResponse = try JSONDecoder().decode(RPCResponse<Result>.self, from: stubbedData)
                 let res = Web3Response<Result>(rpcResponse: rpcResponse)
-                response(res)
+                return res
             } catch {
                 let err = Web3Response<Result>(error: .decodingError(error))
-                response(err)
+                return err
             }
         } else {
             let err = Web3Response<Result>(error: .serverError(nil))
-            response(err)
+            return err
         }
     }
 
@@ -101,10 +100,15 @@ class ContractTests: QuickSpec {
             describe("Constructor method") {
                 it("should be able to be deployed") {
                     waitUntil { done in
-                        contract.deploy(name: "Test Instance").send(from: .testAddress, value: 0, gas: 15000, gasPrice: nil).done { hash in
-                            done()
-                        }.catch { error in
-                            fail()
+                        Task {
+                            let (hash, error) = await contract.deploy(name: "Test Instance").send(from: .testAddress, value: 0, gas: 15000, gasPrice: nil)
+                                
+                            if let error = error {
+                                fail(error.localizedDescription)
+                            }
+                            if (hash != nil) {
+                                done()
+                            }
                         }
                     }
                 }
@@ -116,18 +120,22 @@ class ContractTests: QuickSpec {
 
                 it("should succeed with call") {
                     waitUntil { done in
-                        invocation.call().done { values in
-                            expect(values["_balance"] as? BigUInt).to(equal(1))
+                        Task {
+                            let (values, error) = await invocation.call()
+                            if let error = error {
+                                fail(error.localizedDescription)
+                            }
+                            
+                            expect(values?["_balance"] as? BigUInt).to(equal(1))
                             done()
-                        }.catch { error in
-                            fail(error.localizedDescription)
                         }
                     }
                 }
 
                 it("should fail with send") {
                     waitUntil { done in
-                        invocation.send(from: .testAddress, value: nil, gas: 0, gasPrice: 0).catch { error in
+                        Task {
+                            let (_, error) = await invocation.send(nonce: nil, from: .testAddress, value: nil, gas: 0, gasPrice: 0)
                             expect(error as? InvocationError).to(equal(InvocationError.invalidInvocation))
                             done()
                         }
@@ -142,12 +150,16 @@ class ContractTests: QuickSpec {
 
                 it("should estimate gas") {
                     waitUntil { done in
-                        firstly {
-                            invocation.estimateGas(from: .testAddress, value: EthereumQuantity(quantity: 1.eth))
-                        }.done { gas in
-                            done()
-                        }.catch { error in
-                            fail(error.localizedDescription)
+                        Task {
+                            let (gas, error) = await invocation.estimateGas(from: .testAddress, value: EthereumQuantity(quantity: 1.eth))
+                            
+                            if let error = error {
+                                fail(error.localizedDescription)
+                            }
+                            
+                            if (gas != nil) {
+                                done()
+                            }
                         }
                     }
                 }
@@ -155,20 +167,24 @@ class ContractTests: QuickSpec {
                 it("should succeed with send") {
                     let expectedHash = try! EthereumData(ethereumValue: "0x0e670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99d05921026d1527331")
                     waitUntil { done in
-                        firstly {
-                            invocation.send(from: .testAddress, value: EthereumQuantity(quantity: 1.eth), gas: 21000, gasPrice: nil)
-                        }.done { hash in
+                        Task {
+                            let (hash, error) = await invocation.send(nonce: nil, from: .testAddress, value: EthereumQuantity(quantity: 1.eth), gas: 21000, gasPrice: nil)
+                            
+                            if let error = error {
+                                fail(error.localizedDescription)
+                            }
+                            
                             expect(hash).to(equal(expectedHash))
                             done()
-                        }.catch { error in
-                            fail(error.localizedDescription)
                         }
                     }
                 }
 
                 it("should fail with call") {
                     waitUntil { done in
-                        invocation.call().catch { error in
+                        Task {
+                            let (_, error) = await invocation.call()
+                            
                             expect(error as? InvocationError).to(equal(.invalidInvocation))
                             done()
                         }
@@ -184,18 +200,24 @@ class ContractTests: QuickSpec {
                 it("should succeed with send") {
                     let expectedHash = try! EthereumData(ethereumValue: "0x0e670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99d05921026d1527331")
                     waitUntil { done in
-                        invocation.send(from: .testAddress, value: nil, gas: 12000, gasPrice: 700000).done { hash in
+                        Task {
+                            let (hash, error) = await invocation.send(nonce: nil, from: .testAddress, value: nil, gas: 12000, gasPrice: 700000)
+                            
+                            if let error = error {
+                                fail(error.localizedDescription)
+                            }
+                            
                             expect(hash).to(equal(expectedHash))
                             done()
-                        }.catch { error in
-                            fail(error.localizedDescription)
                         }
                     }
                 }
 
                 it("should fail with call") {
                     waitUntil { done in
-                        invocation.call().catch { error in
+                        Task {
+                            let (_, error) = await invocation.call()
+                            
                             expect(error as? InvocationError).to(equal(.invalidInvocation))
                             done()
                         }
@@ -208,19 +230,24 @@ class ContractTests: QuickSpec {
 
                 it("should be decoded from a matching log") {
                     waitUntil { done in
-                        firstly {
-                            web3.eth.getTransactionReceipt(transactionHash: hash)
-                        }.done { receipt in
-                            if let logs = receipt?.logs {
-                                for log in logs {
-                                    if let _ = try? ABI.decodeLog(event: TestContract.Transfer, from: log) {
-                                        done()
-                                        break
+                        Task {
+                            let response = await web3.eth.getTransactionReceipt(transactionHash: hash)
+                            
+                            switch response.status {
+                            case .failure(let error):
+                                fail(error.localizedDescription)
+                            case .success(let receipt):
+                                if let logs = receipt?.logs {
+                                    for log in logs {
+                                        if let _ = try? ABI.decodeLog(event: TestContract.Transfer, from: log) {
+                                            done()
+                                            break
+                                        }
                                     }
                                 }
                             }
-                        }.catch { error in
-                            fail(error.localizedDescription)
+        
+                            
                         }
                     }
                 }

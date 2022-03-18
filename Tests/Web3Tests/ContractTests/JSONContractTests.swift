@@ -8,7 +8,6 @@
 import Quick
 import Nimble
 @testable import Web3
-import PromiseKit
 import BigInt
 import Foundation
 #if canImport(Web3ContractABI)
@@ -72,7 +71,8 @@ class DynamicContractTests: QuickSpec {
                         it("should deploy") {
                             let expectedHash = try? EthereumData(ethereumValue: "0x0e670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99d05921026d1527331")
                             waitUntil { done in
-                                invocation.send(from: .testAddress, gas: 15000, gasPrice: nil) { (hash, error) in
+                                Task {
+                                    let (hash, error) = await invocation.send(from: .testAddress, gas: 15000, gasPrice: nil)
                                     expect(error).to(beNil())
                                     expect(hash).to(equal(expectedHash))
                                     done()
@@ -82,9 +82,9 @@ class DynamicContractTests: QuickSpec {
 
                         it("should fail to deploy when including a value") {
                             waitUntil { done in
-                                invocation.send(from: .testAddress, value: EthereumQuantity(quantity: 1.eth), gas: 15000, gasPrice: nil) { (hash, error) in
+                                Task {
+                                    let (_, error) = await invocation.send(from: .testAddress, value: EthereumQuantity(quantity: 1.eth), gas: 15000, gasPrice: nil)
                                     expect(error as? InvocationError).to(equal(.invalidInvocation))
-                                    done()
                                 }
                             }
                         }
@@ -97,13 +97,18 @@ class DynamicContractTests: QuickSpec {
 
                     it("should be able to call constant method") {
                         waitUntil { done in
-                            contract["balanceOf"]?(EthereumAddress.testAddress).call() { response, error in
-                                if let response = response, let balance = response["_balance"] as? BigUInt {
-                                    expect(balance).to(equal(1))
-                                    done()
+                            Task {
+                                if let (response, error) = await  contract["balanceOf"]?(EthereumAddress.testAddress).call() {
+                                    if let response = response, let balance = response["_balance"] as? BigUInt {
+                                        expect(balance).to(equal(1))
+                                        done()
+                                    } else {
+                                        fail(error?.localizedDescription ?? "Empty response")
+                                    }
                                 } else {
-                                    fail(error?.localizedDescription ?? "Empty response")
+                                    fail("Could not get contract call")
                                 }
+                                
                             }
                         }
                     }
@@ -114,7 +119,8 @@ class DynamicContractTests: QuickSpec {
                             return
                         }
                         waitUntil { done in
-                            web3.eth.call(call: call, block: .latest) { response in
+                            Task {
+                                let response = await web3.eth.call(call: call, block: .latest)
                                 switch response.status {
                                 case .success:
                                     done()
@@ -134,7 +140,9 @@ class DynamicContractTests: QuickSpec {
                             return
                         }
                         waitUntil { done in
-                            web3.eth.sendTransaction(transaction: transaction) { response in
+                            Task {
+                                let response = await web3.eth.sendTransaction(transaction: transaction)
+                    
                                 switch response.status {
                                 case .success:
                                     done()
@@ -167,18 +175,20 @@ class DynamicContractTests: QuickSpec {
 
                 it("should represent structs with tuples") {
                     waitUntil { done in
-                        firstly {
-                            contract["f"]!(SolidityTuple(.uint(BigUInt(1)), .uint(BigUInt(2))), BigUInt(3)).call()
-                        }.done { outputs in
-                            guard let t = outputs["t"] as? [String: Any] else {
+                        Task {
+                            let (outputs, error) = await contract["f"]!(SolidityTuple(.uint(BigUInt(1)), .uint(BigUInt(2))), BigUInt(3)).call()
+                            
+                            if let error = error {
+                                fail(error.localizedDescription)
+                            }
+                            
+                            guard let t = outputs?["t"] as? [String: Any] else {
                                 fail("returned tuple should be decoded")
                                 return
                             }
                             expect(t["x"] as? BigUInt).to(equal(3))
                             expect(t["y"] as? BigUInt).to(equal(4))
                             done()
-                        }.catch { error in
-                            fail(error.localizedDescription)
                         }
                     }
                 }
