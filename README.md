@@ -14,6 +14,11 @@
   </a>
 </p>
 
+# Fork Changes
+Converted all callbacks to swift built-in async/await and removed promise kit. Minimum requirement changed to iOS 15 and macOS 12.
+
+Note: All of the eth rpc tests that do not pass also fail in original version. It is out of my control.
+
 # :alembic: Web3
 
 Web3.swift is a Swift library for signing transactions and interacting with Smart Contracts in the Ethereum Network.
