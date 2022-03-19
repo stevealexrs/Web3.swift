@@ -13,8 +13,6 @@ public struct Web3HttpProvider: Web3Provider {
     let encoder = JSONEncoder()
     let decoder = JSONDecoder()
 
-    let queue: DispatchQueue
-
     let session: URLSession
 
     static let headers = [
@@ -27,8 +25,6 @@ public struct Web3HttpProvider: Web3Provider {
     public init(rpcURL: String, session: URLSession = URLSession(configuration: .default)) {
         self.rpcURL = rpcURL
         self.session = session
-        // Concurrent queue for faster concurrent requests
-        self.queue = DispatchQueue(label: "Web3HttpProvider", attributes: .concurrent)
     }
 
     public func send<Params, Result: Codable>(request: RPCRequest<Params>) async -> Web3Response<Result> {
