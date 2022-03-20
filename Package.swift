@@ -1,4 +1,4 @@
-// swift-tools-version:5.5
+// swift-tools-version:5.6
 
 import PackageDescription
 
@@ -20,7 +20,7 @@ let package = Package(
         // Core dependencies
         .package(url: "https://github.com/attaswift/BigInt.git", from: "5.0.0"),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.0.0"),
-        .package(name: "secp256k1", url: "https://github.com/GigaBitcoin/secp256k1.swift.git", .upToNextMajor(from: "0.3.4")),
+        .package(url: "https://github.com/GigaBitcoin/secp256k1.swift.git", .upToNextMajor(from: "0.3.4")),
         // Test dependencies
         .package(url: "https://github.com/Quick/Quick.git", from: "3.0.0"),
         .package(url: "https://github.com/Quick/Nimble.git", from: "8.1.2"),
@@ -31,7 +31,7 @@ let package = Package(
             dependencies: [
                 .product(name: "BigInt", package: "BigInt"),
                 .product(name: "CryptoSwift", package: "CryptoSwift"),
-                .product(name: "secp256k1", package: "secp256k1"),
+                .product(name: "secp256k1", package: "secp256k1.swift"),
             ]
         ),
         .target(
