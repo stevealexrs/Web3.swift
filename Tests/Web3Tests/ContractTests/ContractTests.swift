@@ -126,7 +126,7 @@ class ContractTests: QuickSpec {
                                 fail(error.localizedDescription)
                             }
                             
-                            expect(values?["_balance"] as? BigUInt).to(equal(1))
+                            expect(values).to(equal(1))
                             done()
                         }
                     }

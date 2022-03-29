@@ -15,6 +15,7 @@ public enum InvocationError: Error {
     case invalidConfiguration
     case invalidInvocation
     case encodingError
+    case decodingError
 }
 
 /// Represents invoking a given contract method with parameters

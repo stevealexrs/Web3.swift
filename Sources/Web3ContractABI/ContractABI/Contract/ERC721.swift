@@ -17,7 +17,7 @@ public protocol ERC721Contract: ERC165Contract {
     static var Transfer: SolidityEvent { get }
     static var Approval: SolidityEvent { get }
     
-    func balanceOf(address: EthereumAddress) -> SolidityInvocation
+    func balanceOf(address: EthereumAddress) -> SolidityTypedInvocation<BigUInt>
     func ownerOf(tokenId: BigUInt) -> SolidityInvocation
     func approve(to: EthereumAddress, tokenId: BigUInt) -> SolidityInvocation
     func getApproved(tokenId: BigUInt) -> SolidityInvocation
@@ -78,11 +78,13 @@ public extension ERC721Contract {
         return SolidityEvent(name: "Approval", anonymous: false, inputs: inputs)
     }
     
-    func balanceOf(address: EthereumAddress) -> SolidityInvocation {
+    func balanceOf(address: EthereumAddress) -> SolidityTypedInvocation<BigUInt> {
         let inputs = [SolidityFunctionParameter(name: "_owner", type: .address)]
         let outputs = [SolidityFunctionParameter(name: "_balance", type: .uint256)]
         let method = SolidityConstantFunction(name: "balanceOf", inputs: inputs, outputs: outputs, handler: self)
-        return method.invoke(address)
+        return SolidityTypedInvocation(invocation: method.invoke(address), { dict in
+            return dict["_balance"] as! BigUInt
+        })
     }
     
     func ownerOf(tokenId: BigUInt) -> SolidityInvocation {
