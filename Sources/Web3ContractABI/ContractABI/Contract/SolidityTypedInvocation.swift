@@ -11,7 +11,7 @@ import Foundation
 #endif
 
 // Currently, the codegen generate the casting closure because converting dictionary of [String: Any] to struct is difficult
-public struct SolidityTypedInvocation<T: Decodable> {
+public struct SolidityTypedInvocation<T> {
     public var invocation: SolidityInvocation
     private var cast: ([String: Any]) throws -> T
     
