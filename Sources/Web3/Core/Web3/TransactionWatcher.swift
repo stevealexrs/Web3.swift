@@ -109,6 +109,6 @@ public struct TransactionWatcher {
         public var blockTimeout: Int = 50
         public var confirmationBlocks: Int = 24
         // seconds
-        public var pollingInterval: Double = 1
+        public var pollingInterval: TimeInterval = 1
     }
 }
