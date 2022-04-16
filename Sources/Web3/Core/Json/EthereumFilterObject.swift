@@ -18,7 +18,7 @@ public struct EthereumFilterObject: Codable {
     /// Contract address or a list of addresses from which logs should originate.
     public var address: EthereumDataArray?
     
-    /// This allows manually setting the topics for the event filter. If given the filter property and event signature, (topic[0]) will not be set automatically. Each topic can also be a nested array of topics that behaves as “or” operation between the given nested topics.
+    /// This allows manually setting the topics for the event filter. Each topic can also be a nested array of topics that behaves as “or” operation between the given nested topics.
     public var topics: [EthereumData]?
     
     ///  With the addition of EIP-234, blockHash restricts the logs returned to the single block with the 32-byte hash blockHash. Using blockHash is equivalent to fromBlock = toBlock = the block number with hash blockHash. If blockHash is present in in the filter criteria, then neither fromBlock nor toBlock are allowed.
