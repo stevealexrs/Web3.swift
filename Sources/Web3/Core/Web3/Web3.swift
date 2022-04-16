@@ -434,5 +434,18 @@ public struct Web3 {
 
             return await properties.provider.send(request: req)
         }
+        
+        public func getLogs(
+            filter: EthereumFilterObject
+        ) async -> Web3Response<[EthereumLogObject]> {
+            let req = RPCRequest<[EthereumFilterObject]>(
+                id: properties.rpcId,
+                jsonrpc: Web3.jsonrpc,
+                method: "eth_getLogs",
+                params: [filter]
+            )
+            
+            return await properties.provider.send(request: req)
+        }
     }
 }
