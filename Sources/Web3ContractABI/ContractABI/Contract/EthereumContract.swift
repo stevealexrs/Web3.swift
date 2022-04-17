@@ -190,7 +190,7 @@ extension EthereumContract {
         if let topics = topics {
             filterTopics = topics
         } else {
-            filterTopics = [try! EthereumData(event.signature.sha3(.keccak256))]
+            filterTopics = [EthereumData(event.signature.sha3(.keccak256).bytes)]
         }
         
         let filter = EthereumFilterObject(
