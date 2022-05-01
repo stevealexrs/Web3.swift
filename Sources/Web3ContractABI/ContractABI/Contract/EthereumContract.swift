@@ -188,7 +188,7 @@ extension EthereumContract {
         let filterTopics: [EthereumTopic] = [.data(event.event.signature.sha3(.keccak256).bytes)]
      
         do {
-            let logs = try await self.getEventsLog(fromBlock: fromBlock, toBlock: toBlock, topics: filterTopics).get()
+            let logs = try await self.getEventLogs(fromBlock: fromBlock, toBlock: toBlock, topics: filterTopics).get()
             let typedEvents = try logs.map { log in
                 try EthereumEvent(event: event, log: log, address: self.address)
             }
@@ -204,7 +204,7 @@ extension EthereumContract {
     ///  - fromBlock: The block number (greater than or equal to) from which to get events on.
     ///  - toBlock: The block number (less than or equal to) to get events up to.
     ///  - topics: This allows manually setting the topics for the event filter. If given the filter property and event signature, (topic[0]) will not be set automatically. Each topic can also be a nested array of topics that behaves as “or” operation between the given nested topics.
-    private func getEventsLog(
+    private func getEventLogs(
         fromBlock: EthereumQuantityTag? = nil,
         toBlock: EthereumQuantityTag? = nil,
         topics: [EthereumTopic]? = nil
