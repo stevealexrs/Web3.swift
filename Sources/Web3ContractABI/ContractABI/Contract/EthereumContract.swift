@@ -190,21 +190,7 @@ extension EthereumContract {
         do {
             let logs = try await self.getEventLog(fromBlock: fromBlock, toBlock: toBlock, topics: filterTopics).get()
             let typedEvents = try logs.map { log in
-                return EthereumEvent(
-                    name: event.event.name,
-                    signature: event.event.signature,
-                    address: self.address,
-                    result: try event.decode(log: log).get(),
-                    logIndex: log.logIndex,
-                    transactionIndex: log.transactionIndex,
-                    transactionHash: log.transactionHash,
-                    blockHash: log.blockHash,
-                    blockNumber: log.blockNumber,
-                    raw: .init(
-                        data: log.data,
-                        topics: log.topics
-                    )
-                )
+                try EthereumEvent(event: event, log: log, address: self.address)
             }
             return .success(typedEvents)
         } catch {

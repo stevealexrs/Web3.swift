@@ -53,3 +53,21 @@ public struct EthereumEvent<T> {
         public let topics: [EthereumData]
     }
 }
+
+public extension EthereumEvent {
+    init(event: SolidityTypedEvent<T>, log: EthereumLogObject, address: EthereumAddress?) throws {
+        self.name = event.event.name
+        self.signature = event.event.signature
+        self.address = address
+        self.result = try event.decode(log: log).get()
+        self.logIndex = log.logIndex
+        self.transactionIndex = log.transactionIndex
+        self.transactionHash = log.transactionHash
+        self.blockHash = log.blockHash
+        self.blockNumber = log.blockNumber
+        self.raw = .init(
+            data: log.data,
+            topics: log.topics
+        )
+    }
+}
