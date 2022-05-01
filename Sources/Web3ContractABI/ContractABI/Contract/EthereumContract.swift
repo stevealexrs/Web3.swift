@@ -174,30 +174,60 @@ extension EthereumContract {
         }
     }
     
-    /// Get events emitted by this contract.
+    /// Get event emitted by this contract.
+    ///
+    /// - Parameters:
+    ///  - event: The event that you need.
+    ///  - fromBlock: The block number (greater than or equal to) from which to get events on.
+    ///  - toBlock: The block number (less than or equal to) to get events up to.
+    public func getEvent<T>(
+        event: SolidityTypedEvent<T>,
+        fromBlock: EthereumQuantityTag? = nil,
+        toBlock: EthereumQuantityTag? = nil
+    ) async -> Result<[EthereumEvent<T>], Error> {
+        let filterTopics: [EthereumTopic] = [.data(event.event.signature.sha3(.keccak256).bytes)]
+     
+        do {
+            let logs = try await self.getEventLog(fromBlock: fromBlock, toBlock: toBlock, topics: filterTopics).get()
+            let typedEvents = try logs.map { log in
+                return EthereumEvent(
+                    name: event.event.name,
+                    signature: event.event.signature,
+                    address: self.address,
+                    result: try event.decode(log: log).get(),
+                    logIndex: log.logIndex,
+                    transactionIndex: log.transactionIndex,
+                    transactionHash: log.transactionHash,
+                    blockHash: log.blockHash,
+                    blockNumber: log.blockNumber,
+                    raw: .init(
+                        data: log.data,
+                        topics: log.topics
+                    )
+                )
+            }
+            return .success(typedEvents)
+        } catch {
+            return .failure(error)
+        }
+    }
+    
+    /// Get event logs emitted by this contract.
     ///
     /// - Parameters:
     ///  - fromBlock: The block number (greater than or equal to) from which to get events on.
     ///  - toBlock: The block number (less than or equal to) to get events up to.
     ///  - topics: This allows manually setting the topics for the event filter. If given the filter property and event signature, (topic[0]) will not be set automatically. Each topic can also be a nested array of topics that behaves as “or” operation between the given nested topics.
-    public func getEvents(
-        event: SolidityEvent,
+    private func getEventLog(
         fromBlock: EthereumQuantityTag? = nil,
         toBlock: EthereumQuantityTag? = nil,
-        topics: [EthereumData]? = nil
+        topics: [EthereumTopic]? = nil
     ) async -> Result<[EthereumLogObject], Error> {
-        let filterTopics: [EthereumData]
-        if let topics = topics {
-            filterTopics = topics
-        } else {
-            filterTopics = [EthereumData(event.signature.sha3(.keccak256).bytes)]
-        }
-        
         let filter = EthereumFilterObject(
             fromBlock: fromBlock,
             toBlock: toBlock,
             address: address != nil ? EthereumDataArray.data(address!.rawAddress) : nil,
-            topics: filterTopics
+            topics: topics
         )
         switch await self.eth.getLogs(filter: filter).status {
         case .success(let logs):
