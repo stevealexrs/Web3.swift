@@ -188,7 +188,7 @@ extension EthereumContract {
         let filterTopics: [EthereumTopic] = [.data(event.event.signature.sha3(.keccak256).bytes)]
      
         do {
-            let logs = try await self.getEventLog(fromBlock: fromBlock, toBlock: toBlock, topics: filterTopics).get()
+            let logs = try await self.getEventsLog(fromBlock: fromBlock, toBlock: toBlock, topics: filterTopics).get()
             let typedEvents = try logs.map { log in
                 try EthereumEvent(event: event, log: log, address: self.address)
             }
