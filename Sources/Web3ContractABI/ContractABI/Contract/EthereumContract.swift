@@ -180,7 +180,7 @@ extension EthereumContract {
     ///  - event: The event that you need.
     ///  - fromBlock: The block number (greater than or equal to) from which to get events on.
     ///  - toBlock: The block number (less than or equal to) to get events up to.
-    public func getEvent<T>(
+    public func getEvents<T>(
         event: SolidityTypedEvent<T>,
         fromBlock: EthereumQuantityTag? = nil,
         toBlock: EthereumQuantityTag? = nil
@@ -204,7 +204,7 @@ extension EthereumContract {
     ///  - fromBlock: The block number (greater than or equal to) from which to get events on.
     ///  - toBlock: The block number (less than or equal to) to get events up to.
     ///  - topics: This allows manually setting the topics for the event filter. If given the filter property and event signature, (topic[0]) will not be set automatically. Each topic can also be a nested array of topics that behaves as “or” operation between the given nested topics.
-    private func getEventLog(
+    private func getEventsLog(
         fromBlock: EthereumQuantityTag? = nil,
         toBlock: EthereumQuantityTag? = nil,
         topics: [EthereumTopic]? = nil
