@@ -447,5 +447,19 @@ public struct Web3 {
             
             return await properties.provider.send(request: req)
         }
+        
+        public func sign(
+            address: EthereumAddress,
+            message: EthereumData
+        ) async -> Web3Response<EthereumData> {
+            let req = BasicRPCRequest(
+                id: properties.rpcId,
+                jsonrpc: Web3.jsonrpc,
+                method: "eth_sign",
+                params: [address, message]
+            )
+            
+            return await properties.provider.send(request: req)
+        }
     }
 }
